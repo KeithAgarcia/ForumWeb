@@ -89,6 +89,7 @@ public class Main {
         Spark.get(
                 "/",
                 ((request, response) -> {
+                    // the replyId is the thread we're looking at.
                     String replyId = request.queryParams("replyId");
                     int replyIdNum = -1;
                     if (replyId != null) {
@@ -111,16 +112,20 @@ public class Main {
         Spark.post(
                 "/login",
                 ((request, response) -> {
+                    // get the username from a post request
                     String userName = request.queryParams("loginName");
                     if (userName == null) {
                         throw new Exception("Login name not found.");
                     }
 
+                    // try to find user by username
                     User user = selectUser(conn, userName);
                     if (user == null) {
+                        // ..insert the user if there is none
                         insertUser(conn, userName, "");
                     }
 
+                    // store username in session for future requests.
                     Session session = request.session();
                     session.attribute("userName", userName);
 
@@ -149,7 +154,10 @@ public class Main {
                         throw new Exception("Not logged in.");
                     }
 
+
                     String text = request.queryParams("messageText");
+
+                    // each message replies to another message
                     String replyId = request.queryParams("replyId");
 
                     if (text == null || replyId == null) {
@@ -160,6 +168,9 @@ public class Main {
                     User user = selectUser(conn, userName);
                     insertMessage(conn, user.getId(), replyIdNum, text);
 
+                    // you can add this if you want to go back to where
+                    // you once were before you made the post.
+                    // not required.
                     String referrer = request.headers("Referer");
                     response.redirect(referrer != null ? referrer : "/");
                     return "";
